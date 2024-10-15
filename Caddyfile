@@ -1,0 +1,9 @@
+:8080 {
+	@timetable path /teaching/timetables/*
+	reverse_proxy @timetable https://www.cs.ox.ac.uk {
+		header_up Host {http.reverse_proxy.upstream.host}
+	}
+	root * /var/www/html
+	file_server
+
+}

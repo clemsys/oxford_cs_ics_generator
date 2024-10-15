@@ -122,7 +122,7 @@ export default function App() {
   const [selectedGroups, setSelectedGroups] = useState<SessionsGroup>({});
 
   useEffect(() => {
-    fetch(`/timetable-${selectedTerm}.html`, {
+    fetch(`/teaching/timetables/timetable-${selectedTerm}.html`, {
       method: "GET",
       headers: {
         "Content-Type": "text/html; charset=utf-8",
