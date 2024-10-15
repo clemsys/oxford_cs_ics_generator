@@ -59,6 +59,10 @@ function CoursesChipGroup({
   );
 }
 
+function lowerCaseExceptFirst(s: string): string {
+  return s[0] + s.substring(1).toLowerCase();
+}
+
 function GroupsSelection({
   sessionsGroups,
   selectedGroups,
@@ -70,15 +74,16 @@ function GroupsSelection({
 }) {
   const selects = [];
   for (const [course, typeGroups] of Object.entries(sessionsGroups)) {
+    const courseSelects = [];
     for (const [type, groups] of Object.entries(typeGroups)) {
       if (
         course in sessionsGroups &&
         sessionsGroups[course][type as keyof typeof SessionType].length > 0
       ) {
-        selects.push(
+        courseSelects.push(
           <Select
             key={`${course}-${type}`}
-            label={`${course} ${type.toLowerCase()} group `}
+            label={`${lowerCaseExceptFirst(course)} ${type.toLowerCase()}`}
             placeholder="Select group"
             data={groups.map((group) => group.toString())}
             value={
@@ -104,6 +109,11 @@ function GroupsSelection({
         );
       }
     }
+    selects.push(
+      <Group grow key={course} align="end">
+        {...courseSelects}
+      </Group>,
+    );
   }
   return (
     <Stack justify="flex-start" align="stretch">

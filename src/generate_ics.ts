@@ -198,7 +198,7 @@ export function getSessionsGroups(sessions: Session[]): SessionsGroups {
       }
     }
   }
-  return sessionsGroups;
+  return Object.fromEntries(Object.entries(sessionsGroups).sort());
 }
 
 export function getSelectedSessions(
