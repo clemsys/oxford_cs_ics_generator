@@ -150,7 +150,7 @@ export default function App() {
   return (
     <MantineProvider defaultColorScheme="auto">
       <Container size="sm">
-        <Stack mt="md" justify="flex-start" align="stretch">
+        <Stack mb="md" mt="md" justify="flex-start" align="stretch">
           <Group grow>
             <Select
               label="Term"
