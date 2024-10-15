@@ -1,7 +1,7 @@
 # Oxford CS .ics generator
 
-Author: [Clément Chapot](mailto:contact+dev@clementchapot.com)
-License: MIT
+Author: [Clément Chapot](mailto:contact+dev@clementchapot.com) <br/>
+License: MIT <br/>
 Main instance: [https://oxford_cs_ics.chapot.ovh/](https://oxford_cs_ics.chapot.ovh/)
 
 ## Purpose

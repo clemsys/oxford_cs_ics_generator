@@ -151,12 +151,18 @@ function OverlappingHours({
   );
 }
 
-const terms = ["MT2024", "HT2024", "TT2024"];
+const terms: { [key: string]: string } = {
+  Michaelmas: "MT",
+  Hilary: "HT",
+  Trinity: "TT",
+};
 
 export default function App() {
   const [htmlContent, setHtmlContent] = useState<string>("");
   const [date, setDate] = useState<Date | null>(new Date(2024, 9, 14));
-  const [selectedTerm, setSelectedTerm] = useState<string | null>(terms[0]);
+  const [selectedTerm, setSelectedTerm] = useState<string | null>(
+    Object.keys(terms)[0],
+  );
   const [courses, setCourses] = useState<string[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -165,13 +171,20 @@ export default function App() {
   const [selectedSessions, setSelectedSessions] = useState<Session[]>([]);
 
   useEffect(() => {
-    fetch(`/teaching/timetables/timetable-${selectedTerm}.html`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-      },
-    }).then((response) => response.text().then((text) => setHtmlContent(text)));
-  }, [selectedTerm]);
+    if (selectedTerm && date) {
+      fetch(
+        `/teaching/timetables/timetable-${terms[selectedTerm]}${date.getFullYear()}.html`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+          },
+        },
+      ).then((response) =>
+        response.text().then((text) => setHtmlContent(text)),
+      );
+    }
+  }, [selectedTerm, date]);
   useEffect(() => {
     if (date) {
       setSessions(getSessions(htmlContent, date, selectedCourses));
@@ -203,7 +216,7 @@ export default function App() {
               placeholder="Select term"
               value={selectedTerm}
               onChange={setSelectedTerm}
-              data={terms}
+              data={Object.keys(terms)}
             />
             <DateInput
               value={date}
