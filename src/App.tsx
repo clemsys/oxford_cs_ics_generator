@@ -8,6 +8,7 @@ import {
   MultiSelect,
   Select,
   Stack,
+  Text,
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
 import { useEffect, useState } from "react";
@@ -21,6 +22,8 @@ import {
   SessionsGroup,
   SessionType,
   completeSessionsGroup,
+  computeOverlap,
+  getSelectedSessions,
 } from "./generate_ics";
 
 function getCourses(html: string): string[] {
@@ -75,7 +78,7 @@ function GroupsSelection({
         selects.push(
           <Select
             key={`${course}-${type}`}
-            label={`${course} ${type} group `}
+            label={`${course} ${type.toLowerCase()} group `}
             placeholder="Select group"
             data={groups.map((group) => group.toString())}
             value={
@@ -126,6 +129,28 @@ function validSelectedGroups(
   return true;
 }
 
+function OverlappingHours({
+  selectedSessions,
+}: {
+  selectedSessions: Session[];
+}) {
+  const [overlappingHours, setOverlappingHours] = useState<number>(0);
+
+  useEffect(() => {
+    setOverlappingHours(computeOverlap(selectedSessions));
+  }, [selectedSessions]);
+
+  return (
+    <div>
+      {overlappingHours > 0 && (
+        <Text c="red">
+          Total overlapping hours over term: {overlappingHours}
+        </Text>
+      )}
+    </div>
+  );
+}
+
 const terms = ["MT2024", "HT2024", "TT2024"];
 
 export default function App() {
@@ -137,6 +162,7 @@ export default function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionsGroups, setSessionsGroups] = useState<SessionsGroups>({});
   const [selectedGroups, setSelectedGroups] = useState<SessionsGroup>({});
+  const [selectedSessions, setSelectedSessions] = useState<Session[]>([]);
 
   useEffect(() => {
     fetch(`/teaching/timetables/timetable-${selectedTerm}.html`, {
@@ -163,6 +189,9 @@ export default function App() {
   useEffect(() => {
     setSelectedGroups((s) => completeSessionsGroup(s, sessionsGroups));
   }, [sessionsGroups]);
+  useEffect(() => {
+    setSelectedSessions(getSelectedSessions(sessions, selectedGroups));
+  }, [selectedGroups, sessions]);
 
   return (
     <MantineProvider defaultColorScheme="auto">
@@ -179,7 +208,7 @@ export default function App() {
             <DateInput
               value={date}
               onChange={(d) => {
-                if (d.getDay() == 1) {
+                if (d && d.getDay() == 1) {
                   setDate(d);
                 }
               }}
@@ -198,16 +227,14 @@ export default function App() {
             selectedGroups={selectedGroups}
             setSelectedGroups={setSelectedGroups}
           />
+          <OverlappingHours selectedSessions={selectedSessions} />
           <Button
             onClick={() => {
               if (
                 sessions.length > 0 &&
                 validSelectedGroups(sessionsGroups, selectedGroups)
               ) {
-                download(
-                  "Oxford_CS.ics",
-                  generateICS(sessions, selectedGroups),
-                );
+                download("Oxford_CS.ics", generateICS(selectedSessions));
               }
             }}
           >

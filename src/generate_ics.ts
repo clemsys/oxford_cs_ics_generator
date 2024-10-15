@@ -201,25 +201,54 @@ export function getSessionsGroups(sessions: Session[]): SessionsGroups {
   return sessionsGroups;
 }
 
-export function generateICS(
+export function getSelectedSessions(
   sessions: Session[],
   selectedGroups: SessionsGroup,
-): string {
-  const icsSessions = [];
-
-  for (const session of sessions) {
+) {
+  return sessions.filter((session) => {
     const group =
       session.course in selectedGroups
         ? selectedGroups[session.course][session.type]
         : null;
-    if (session.group == group) {
-      const groupString = session.group ? `[Gr ${session.group}]` : "";
-      const typeString =
-        session.type == SessionType.Lecture
-          ? ""
-          : `[${SessionType[session.type]}]`;
+    return session.group == group;
+  });
+}
 
-      icsSessions.push(`
+// overlap in number of hours
+export function computeOverlap(sessions: Session[]): number {
+  const sortedSessions = sessions.sort(
+    (a, b) => a.startDate.getTime() - b.startDate.getTime(),
+  );
+  let totalOverlapHours = 0;
+
+  for (let i = 0; i < sortedSessions.length - 1; i++) {
+    const session = sortedSessions[i];
+    let j = i + 1;
+    while (
+      j < sortedSessions.length &&
+      session.endDate > sortedSessions[j].startDate
+    ) {
+      totalOverlapHours +=
+        (session.endDate.getTime() - sortedSessions[j].startDate.getTime()) /
+        3600000;
+      j++;
+    }
+  }
+
+  return totalOverlapHours;
+}
+
+export function generateICS(sessions: Session[]): string {
+  const icsSessions = [];
+
+  for (const session of sessions) {
+    const groupString = session.group ? `[Gr ${session.group}]` : "";
+    const typeString =
+      session.type == SessionType.Lecture
+        ? ""
+        : `[${SessionType[session.type]}]`;
+
+    icsSessions.push(`
 BEGIN:VEVENT
 UID:${generateRandomHex(8)}-${generateRandomHex(4)}-${generateRandomHex(4)}-${generateRandomHex(4)}-${generateRandomHex(12)}
 DTSTAMP:${new Date(Date.now()).iCalFormat()}Z
@@ -228,7 +257,6 @@ DTEND;TZID=Europe/London:${session.endDate.iCalFormat()}
 LOCATION:${session.loc}
 SUMMARY:${typeString} ${groupString} ${session.course}
 END:VEVENT`);
-    }
   }
 
   const iCalHeader = `BEGIN:VCALENDAR
