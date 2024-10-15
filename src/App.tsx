@@ -109,7 +109,24 @@ function GroupsSelection({
   );
 }
 
-const terms = ["MT2024"];
+function validSelectedGroups(
+  sessionsGroups: SessionsGroups,
+  selectedGroups: SessionsGroup,
+): boolean {
+  for (const [course, typeGroups] of Object.entries(selectedGroups)) {
+    for (const [type, group] of Object.entries(typeGroups)) {
+      if (
+        group == null &&
+        sessionsGroups[course][type as keyof typeof SessionType].length > 0
+      ) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+const terms = ["MT2024", "HT2024", "TT2024"];
 
 export default function App() {
   const [htmlContent, setHtmlContent] = useState<string>("");
@@ -161,7 +178,11 @@ export default function App() {
             />
             <DateInput
               value={date}
-              onChange={setDate}
+              onChange={(d) => {
+                if (d.getDay() == 1) {
+                  setDate(d);
+                }
+              }}
               label="Monday of week 1"
               placeholder="Select Monday of week 1"
               excludeDate={(date) => date.getDay() !== 1}
@@ -179,7 +200,10 @@ export default function App() {
           />
           <Button
             onClick={() => {
-              if (sessions.length > 0) {
+              if (
+                sessions.length > 0 &&
+                validSelectedGroups(sessionsGroups, selectedGroups)
+              ) {
                 download(
                   "Oxford_CS.ics",
                   generateICS(sessions, selectedGroups),
