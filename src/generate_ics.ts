@@ -12,7 +12,7 @@ function getWeeks(dirtyString: string): number[] {
 }
 
 // Monday is 1, Friday is 5
-function getWeekDay(tdElement: HTMLElement) {
+function getWeekDay(tdElement: HTMLElement): number {
   return Array.from(tdElement.parentNode!.children).indexOf(tdElement);
 }
 
@@ -23,6 +23,7 @@ function getGroup(s: string): number | null {
   return null;
 }
 
+// zero pad two digits number function for hours, minutes, days, months
 function zeroPad(x: number): string {
   return x.toLocaleString("en-US", {
     minimumIntegerDigits: 2,
@@ -64,10 +65,10 @@ Date.prototype.iCalFormat = function (): string {
   return `${this.getFullYear()}${zeroPad(this.getMonth() + 1)}${zeroPad(this.getDate())}T${zeroPad(this.getHours())}${zeroPad(this.getMinutes())}00`;
 };
 
-enum SessionType {
+export enum SessionType {
   Lecture = "Lecture",
-  Practical = "Practical",
   Class = "Class",
+  Practical = "Practical",
 }
 
 function getSessionType(element: HTMLElement): SessionType {
@@ -80,8 +81,8 @@ function getSessionType(element: HTMLElement): SessionType {
   ];
 }
 
-export interface Session {
-  name: string;
+export interface RecurringSession {
+  course: string;
   startDate: Date;
   endDate: Date;
   loc: string;
@@ -91,27 +92,46 @@ export interface Session {
   group: number | null;
 }
 
-export interface SessionGroups {
-  name: string;
+export interface Session {
+  course: string;
+  startDate: Date;
+  endDate: Date;
+  loc: string;
   type: SessionType;
-  groups: number[];
+  group: number | null;
 }
 
-function compareSessionGroups(a: SessionGroups, b: SessionGroups): number {
-  if (a.name < b.name) {
-    return -1;
-  } else if (a.name > b.name) {
-    return 1;
-  } else {
-    return a.type.localeCompare(b.type);
+export type SessionsGroups = {
+  [course: string]: { [sessionType in SessionType]: number[] };
+};
+
+export type SessionsGroup = {
+  [course: string]: { [sessionType in SessionType]: number | null };
+};
+
+export function completeSessionsGroup(
+  selectedGroups: SessionsGroup,
+  sessionsGroups: SessionsGroups,
+) {
+  const sessionsGroup: SessionsGroup = {};
+  for (const course in sessionsGroups) {
+    sessionsGroup[course] =
+      course in selectedGroups
+        ? selectedGroups[course]
+        : {
+            Lecture: null,
+            Class: null,
+            Practical: null,
+          };
   }
+  return sessionsGroup;
 }
 
 export function getSessions(
   htmlContent: string,
   mondayWeekOne: Date,
   selectedCoursesNames: string[],
-) {
+): Session[] {
   const html = new DOMParser().parseFromString(htmlContent, "text/html");
   const allSessions = html.querySelectorAll("div.eventCourse");
   const sessions: Session[] = [];
@@ -146,13 +166,11 @@ export function getSessions(
         const endDate = new Date(sessionDay).addTime(sessionEndTime);
 
         sessions.push({
-          name: sessionName,
+          course: sessionName,
           startDate: startDate,
           endDate: endDate,
           loc: sessionLocation,
           type: sessionType,
-          weeks: sessionWeeks,
-          weekDay: sessionWeekDay,
           group: sessionGroup,
         });
       }
@@ -161,60 +179,39 @@ export function getSessions(
   return sessions;
 }
 
-export function getSessionsGroups(sessions: Session[]): SessionGroups[] {
-  const sessionsGroups: SessionGroups[] = [];
+export function getSessionsGroups(sessions: Session[]): SessionsGroups {
+  const sessionsGroups: SessionsGroups = {};
   for (const session of sessions) {
     if (session.group) {
-      const sessionIndex = sessionsGroups.findIndex(
-        (x) => x.name === session.name && x.type === session.type,
-      );
-      if (sessionIndex === -1) {
-        sessionsGroups.push({
-          name: session.name,
-          type: session.type,
-          groups: [session.group],
-        });
-      } else if (!sessionsGroups[sessionIndex].groups.includes(session.group)) {
-        sessionsGroups[sessionIndex].groups.push(session.group);
+      if (!(session.course in sessionsGroups)) {
+        sessionsGroups[session.course] = {
+          Lecture: [],
+          Class: [],
+          Practical: [],
+        };
+      }
+      if (
+        !sessionsGroups[session.course][session.type].includes(session.group)
+      ) {
+        sessionsGroups[session.course][session.type].push(session.group);
+        sessionsGroups[session.course][session.type].sort();
       }
     }
   }
-  for (const sessionGroup of sessionsGroups) {
-    sessionGroup.groups.sort();
-  }
-  sessionsGroups.sort((a, b) => compareSessionGroups(a, b));
   return sessionsGroups;
-}
-
-function getGroupFromSessions(
-  sessionName: string,
-  sessionType: SessionType,
-  sessionsGroups: SessionGroups[],
-  selectedGroups: (string | null)[],
-) {
-  const i = sessionsGroups.findIndex(
-    (x) => x.name === sessionName && x.type === sessionType,
-  );
-  if (i >= 0) {
-    return selectedGroups[i];
-  }
-  return null;
 }
 
 export function generateICS(
   sessions: Session[],
-  sessionsGroups: SessionGroups[],
-  selectedGroups: (string | null)[],
+  selectedGroups: SessionsGroup,
 ): string {
   const icsSessions = [];
 
   for (const session of sessions) {
-    const group = getGroupFromSessions(
-      session.name,
-      session.type,
-      sessionsGroups,
-      selectedGroups,
-    );
+    const group =
+      session.course in selectedGroups
+        ? selectedGroups[session.course][session.type]
+        : null;
     if (session.group == group) {
       const groupString = session.group ? `[Gr ${session.group}]` : "";
       const typeString =
@@ -229,7 +226,7 @@ DTSTAMP:${new Date(Date.now()).iCalFormat()}Z
 DTSTART;TZID=Europe/London:${session.startDate.iCalFormat()}
 DTEND;TZID=Europe/London:${session.endDate.iCalFormat()}
 LOCATION:${session.loc}
-SUMMARY:${typeString} ${groupString} ${session.name}
+SUMMARY:${typeString} ${groupString} ${session.course}
 END:VEVENT`);
     }
   }

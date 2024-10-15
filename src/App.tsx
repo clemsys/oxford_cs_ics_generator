@@ -16,8 +16,11 @@ import {
   download,
   getSessions,
   getSessionsGroups,
-  SessionGroups,
+  SessionsGroups,
   Session,
+  SessionsGroup,
+  SessionType,
+  completeSessionsGroup,
 } from "./generate_ics";
 
 function getCourses(html: string): string[] {
@@ -58,26 +61,50 @@ function GroupsSelection({
   selectedGroups,
   setSelectedGroups,
 }: {
-  sessionsGroups: SessionGroups[];
-  selectedGroups: (string | null)[];
-  setSelectedGroups: (groups: (string | null)[]) => void;
+  sessionsGroups: SessionsGroups;
+  selectedGroups: SessionsGroup;
+  setSelectedGroups: (selectedGroups: SessionsGroup) => void;
 }) {
+  const selects = [];
+  for (const [course, typeGroups] of Object.entries(sessionsGroups)) {
+    for (const [type, groups] of Object.entries(typeGroups)) {
+      if (
+        course in sessionsGroups &&
+        sessionsGroups[course][type as keyof typeof SessionType].length > 0
+      ) {
+        selects.push(
+          <Select
+            key={`${course}-${type}`}
+            label={`${course} ${type} group `}
+            placeholder="Select group"
+            data={groups.map((group) => group.toString())}
+            value={
+              course in selectedGroups &&
+              selectedGroups[course][type as keyof typeof SessionType] != null
+                ? selectedGroups[course][
+                    type as keyof typeof SessionType
+                  ]!.toString()
+                : null
+            }
+            onChange={(value) =>
+              setSelectedGroups({
+                ...selectedGroups,
+                [course]: {
+                  ...selectedGroups[course],
+                  [type as keyof typeof SessionType]: value
+                    ? parseInt(value)
+                    : null,
+                },
+              })
+            }
+          />,
+        );
+      }
+    }
+  }
   return (
     <Stack justify="flex-start" align="stretch">
-      {sessionsGroups.map((sessionGroups, index) => (
-        <Select
-          key={index}
-          label={`${sessionGroups.name} ${sessionGroups.type.toLowerCase()} group `}
-          placeholder="Select group"
-          data={sessionGroups.groups.map((group) => group.toString())}
-          value={selectedGroups[index]}
-          onChange={(value) =>
-            setSelectedGroups(
-              selectedGroups.map((v, i) => (i === index ? value : v)),
-            )
-          }
-        />
-      ))}
+      {selects}
     </Stack>
   );
 }
@@ -91,8 +118,8 @@ export default function App() {
   const [courses, setCourses] = useState<string[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [sessionsGroups, setSessionsGroups] = useState<SessionGroups[]>([]);
-  const [selectedGroups, setSelectedGroups] = useState<(string | null)[]>([]);
+  const [sessionsGroups, setSessionsGroups] = useState<SessionsGroups>({});
+  const [selectedGroups, setSelectedGroups] = useState<SessionsGroup>({});
 
   useEffect(() => {
     fetch(`/timetable-${selectedTerm}.html`, {
@@ -111,14 +138,13 @@ export default function App() {
     setSelectedCourses([]);
   }, [selectedTerm]);
   useEffect(() => {
-    console.log("fetching courses");
     setCourses(getCourses(htmlContent));
   }, [htmlContent]);
   useEffect(() => {
     setSessionsGroups(getSessionsGroups(sessions));
   }, [sessions]);
   useEffect(() => {
-    setSelectedGroups(sessionsGroups.map(() => null));
+    setSelectedGroups((s) => completeSessionsGroup(s, sessionsGroups));
   }, [sessionsGroups]);
 
   return (
@@ -156,7 +182,7 @@ export default function App() {
               if (sessions.length > 0) {
                 download(
                   "Oxford_CS.ics",
-                  generateICS(sessions, sessionsGroups, selectedGroups),
+                  generateICS(sessions, selectedGroups),
                 );
               }
             }}
