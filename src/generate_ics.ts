@@ -215,10 +215,13 @@ export function getSelectedSessions(
 }
 
 // overlap in number of hours
-export function computeOverlap(sessions: Session[]): number {
+export function computeOverlap(
+  sessions: Session[],
+): [[Session, Session][], number] {
   const sortedSessions = sessions.sort(
     (a, b) => a.startDate.getTime() - b.startDate.getTime(),
   );
+  const overlaps: [Session, Session][] = [];
   let totalOverlapHours = 0;
 
   for (let i = 0; i < sortedSessions.length - 1; i++) {
@@ -228,6 +231,7 @@ export function computeOverlap(sessions: Session[]): number {
       j < sortedSessions.length &&
       session.endDate > sortedSessions[j].startDate
     ) {
+      overlaps.push([session, sortedSessions[j]]);
       totalOverlapHours +=
         (session.endDate.getTime() - sortedSessions[j].startDate.getTime()) /
         3600000;
@@ -235,7 +239,7 @@ export function computeOverlap(sessions: Session[]): number {
     }
   }
 
-  return totalOverlapHours;
+  return [overlaps, totalOverlapHours];
 }
 
 export function generateICS(sessions: Session[]): string {
