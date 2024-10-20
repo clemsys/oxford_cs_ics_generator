@@ -1,7 +1,35 @@
 import { useEffect, useState } from "react";
-import { computeOverlap, Session } from "./generate_ics";
+import { Session } from "./generate_ics";
 import { useDisclosure } from "@mantine/hooks";
 import { Collapse, Group, List, Text, UnstyledButton } from "@mantine/core";
+
+// overlap in number of hours
+const computeOverlap = (
+  sessions: Session[],
+): [[Session, Session][], number] => {
+  const sortedSessions = sessions.sort(
+    (a, b) => a.startDate.getTime() - b.startDate.getTime(),
+  );
+  const overlaps: [Session, Session][] = [];
+  let totalOverlapHours = 0;
+
+  for (let i = 0; i < sortedSessions.length - 1; i++) {
+    const session = sortedSessions[i];
+    let j = i + 1;
+    while (
+      j < sortedSessions.length &&
+      session.endDate > sortedSessions[j].startDate
+    ) {
+      overlaps.push([session, sortedSessions[j]]);
+      totalOverlapHours +=
+        (session.endDate.getTime() - sortedSessions[j].startDate.getTime()) /
+        3600000;
+      j++;
+    }
+  }
+
+  return [overlaps, totalOverlapHours];
+};
 
 const lowerCaseExceptFirst = (s: string): string => {
   return s[0] + s.substring(1).toLowerCase();

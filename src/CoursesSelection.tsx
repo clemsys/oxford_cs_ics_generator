@@ -1,7 +1,8 @@
 import { Group, MultiSelect, Select } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
 import { useEffect, useState } from "react";
-import { getSessions, Session } from "./generate_ics";
+import { Session } from "./generate_ics";
+import { getSessions } from "./get_sessions.ts";
 
 const CoursesChipGroup = ({
   courses,

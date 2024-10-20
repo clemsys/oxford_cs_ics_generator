@@ -8,7 +8,6 @@ import {
   SessionsGroup,
   Session,
   getSelectedSessions,
-  completeSessionsGroup,
   getSessionsGroups,
   SessionType,
 } from "./generate_ics";
@@ -16,6 +15,24 @@ import { Overlaps } from "./Overlaps";
 import { CoursesSelection } from "./CoursesSelection";
 import { useEffect, useState } from "react";
 import { GroupsSelection } from "./GroupsSelection";
+
+const completeSessionsGroup = (
+  selectedGroups: SessionsGroup,
+  sessionsGroups: SessionsGroups,
+) => {
+  const sessionsGroup: SessionsGroup = {};
+  for (const course in sessionsGroups) {
+    sessionsGroup[course] =
+      course in selectedGroups
+        ? selectedGroups[course]
+        : {
+            Lecture: null,
+            Class: null,
+            Practical: null,
+          };
+  }
+  return sessionsGroup;
+};
 
 const validSelectedGroups = (
   sessionsGroups: SessionsGroups,
