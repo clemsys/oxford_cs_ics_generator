@@ -2,16 +2,12 @@ import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import {
   Button,
-  Collapse,
   Container,
   Group,
-  List,
   MantineProvider,
   MultiSelect,
   Select,
   Stack,
-  Text,
-  UnstyledButton,
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
 import { useEffect, useState } from "react";
@@ -25,12 +21,12 @@ import {
   SessionsGroup,
   SessionType,
   completeSessionsGroup,
-  computeOverlap,
   getSelectedSessions,
 } from "./generate_ics";
-import { useDisclosure } from "@mantine/hooks";
+import { Overlaps } from "./Overlaps";
+import { GroupsSelection } from "./GroupsSelection";
 
-function getCourses(html: string): string[] {
+const getCourses = (html: string): string[] => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
   const courseDivs = doc.querySelectorAll("div.eventCourse");
@@ -40,9 +36,9 @@ function getCourses(html: string): string[] {
   return courses
     .filter((course, index) => courses.indexOf(course) === index)
     .sort();
-}
+};
 
-function CoursesChipGroup({
+const CoursesChipGroup = ({
   courses,
   selectedCourses,
   setSelectedCourses,
@@ -50,7 +46,7 @@ function CoursesChipGroup({
   courses: string[];
   selectedCourses: string[];
   setSelectedCourses: (courses: string[]) => void;
-}) {
+}) => {
   return (
     <MultiSelect
       label="Courses"
@@ -61,75 +57,12 @@ function CoursesChipGroup({
       maxDropdownHeight={400}
     />
   );
-}
+};
 
-function lowerCaseExceptFirst(s: string): string {
-  return s[0] + s.substring(1).toLowerCase();
-}
-
-function GroupsSelection({
-  sessionsGroups,
-  selectedGroups,
-  setSelectedGroups,
-}: {
-  sessionsGroups: SessionsGroups;
-  selectedGroups: SessionsGroup;
-  setSelectedGroups: (selectedGroups: SessionsGroup) => void;
-}) {
-  const selects = [];
-  for (const [course, typeGroups] of Object.entries(sessionsGroups)) {
-    const courseSelects = [];
-    for (const [type, groups] of Object.entries(typeGroups)) {
-      if (
-        course in sessionsGroups &&
-        sessionsGroups[course][type as keyof typeof SessionType].length > 0
-      ) {
-        courseSelects.push(
-          <Select
-            key={`${course}-${type}`}
-            label={`${lowerCaseExceptFirst(course)} ${type.toLowerCase()}`}
-            placeholder="Select group"
-            data={groups.map((group) => group.toString())}
-            value={
-              course in selectedGroups &&
-              selectedGroups[course][type as keyof typeof SessionType] != null
-                ? selectedGroups[course][
-                    type as keyof typeof SessionType
-                  ]!.toString()
-                : null
-            }
-            onChange={(value) =>
-              setSelectedGroups({
-                ...selectedGroups,
-                [course]: {
-                  ...selectedGroups[course],
-                  [type as keyof typeof SessionType]: value
-                    ? parseInt(value)
-                    : null,
-                },
-              })
-            }
-          />,
-        );
-      }
-    }
-    selects.push(
-      <Group grow key={course} align="end">
-        {...courseSelects}
-      </Group>,
-    );
-  }
-  return (
-    <Stack justify="flex-start" align="stretch">
-      {selects}
-    </Stack>
-  );
-}
-
-function validSelectedGroups(
+const validSelectedGroups = (
   sessionsGroups: SessionsGroups,
   selectedGroups: SessionsGroup,
-): boolean {
+): boolean => {
   for (const [course, typeGroups] of Object.entries(selectedGroups)) {
     for (const [type, group] of Object.entries(typeGroups)) {
       if (
@@ -141,91 +74,7 @@ function validSelectedGroups(
     }
   }
   return true;
-}
-
-function OverlappingHours({
-  selectedSessions,
-}: {
-  selectedSessions: Session[];
-}) {
-  const [overlappingHours, setOverlappingHours] = useState<number>(0);
-  const [overlaps, setOverlaps] = useState<[Session, Session][]>([]);
-  const [opened, { toggle }] = useDisclosure(false);
-
-  useEffect(() => {
-    const [sessionsOverlaps, totalOverlappingHours] =
-      computeOverlap(selectedSessions);
-    setOverlappingHours(totalOverlappingHours);
-    setOverlaps(sessionsOverlaps);
-  }, [selectedSessions]);
-
-  if (overlappingHours == 0) {
-    return <div></div>;
-  } else {
-    return (
-      <div>
-        <Group justify="space-between">
-          <Text c="red" flex-grow>
-            Total overlapping hours over term: {overlappingHours}
-          </Text>
-          <UnstyledButton onClick={toggle}>
-            {opened ? "▴ " : "▾ "} details
-          </UnstyledButton>
-        </Group>
-        <Collapse in={opened}>
-          <List>
-            {overlaps.map((s) => {
-              const startDate = new Date(
-                Math.max(s[0].startDate.getTime(), s[1].startDate.getTime()),
-              );
-              const endDate = new Date(
-                Math.min(s[0].endDate.getTime(), s[1].endDate.getTime()),
-              );
-              const dateString =
-                startDate.toLocaleDateString("en-GB", {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                }) +
-                " from " +
-                startDate.toLocaleTimeString("en-GB", {
-                  hour: "numeric",
-                  minute: "numeric",
-                  hour12: false,
-                }) +
-                " to " +
-                endDate.toLocaleTimeString("en-GB", {
-                  hour: "numeric",
-                  minute: "numeric",
-                  hour12: false,
-                });
-              return (
-                <List.Item
-                  key={
-                    s[0].startDate.getTime().toString() +
-                    s[1].startDate.getTime().toString() +
-                    s[0].endDate.getTime().toString() +
-                    s[1].endDate.getTime().toString() +
-                    s[0].course +
-                    s[1].course
-                  }
-                >
-                  <div>{dateString}</div>
-                  <div>
-                    {lowerCaseExceptFirst(s[0].course + " " + s[0].type)}{" "}
-                  </div>
-                  <div>
-                    {lowerCaseExceptFirst(s[1].course + " " + s[1].type)}
-                  </div>
-                </List.Item>
-              );
-            })}
-          </List>
-        </Collapse>
-      </div>
-    );
-  }
-}
+};
 
 const terms: { [key: string]: string } = {
   Michaelmas: "MT",
@@ -233,7 +82,7 @@ const terms: { [key: string]: string } = {
   Trinity: "TT",
 };
 
-export default function App() {
+export const App = () => {
   const [htmlContent, setHtmlContent] = useState<string>("");
   const [date, setDate] = useState<Date | null>(new Date(2024, 9, 14));
   const [selectedTerm, setSelectedTerm] = useState<string | null>(
@@ -316,7 +165,7 @@ export default function App() {
             selectedGroups={selectedGroups}
             setSelectedGroups={setSelectedGroups}
           />
-          <OverlappingHours selectedSessions={selectedSessions} />
+          <Overlaps selectedSessions={selectedSessions} />
           <Button
             onClick={() => {
               if (
@@ -333,4 +182,4 @@ export default function App() {
       </Container>
     </MantineProvider>
   );
-}
+};

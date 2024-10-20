@@ -1,4 +1,4 @@
-function getWeeks(dirtyString: string): number[] {
+const getWeeks = (dirtyString: string): number[] => {
   const cleanString = dirtyString.replace(/[^0-9,-]/g, "");
   if (cleanString.includes("-")) {
     const [firstWeek, lastWeek] = cleanString.split("-").map((x) => Number(x));
@@ -9,36 +9,36 @@ function getWeeks(dirtyString: string): number[] {
   } else {
     return cleanString.split(",").map((x) => Number(x));
   }
-}
+};
 
 // Monday is 1, Friday is 5
-function getWeekDay(tdElement: HTMLElement): number {
+const getWeekDay = (tdElement: HTMLElement): number => {
   return Array.from(tdElement.parentNode!.children).indexOf(tdElement);
-}
+};
 
-function getGroup(s: string): number | null {
+const getGroup = (s: string): number | null => {
   if (s.includes("Group")) {
     return Number(s.replace(/[^0-9]/g, ""));
   }
   return null;
-}
+};
 
 // zero pad two digits number function for hours, minutes, days, months
-function zeroPad(x: number): string {
+const zeroPad = (x: number): string => {
   return x.toLocaleString("en-US", {
     minimumIntegerDigits: 2,
     useGrouping: false,
   });
-}
+};
 
-function generateRandomHex(length: number): string {
+const generateRandomHex = (length: number): string => {
   let result = "";
   for (let i = 0; i < length; i++) {
     const randomValue = Math.floor(Math.random() * 16);
     result += randomValue.toString(16);
   }
   return result;
-}
+};
 
 declare global {
   interface Date {
@@ -71,7 +71,7 @@ export enum SessionType {
   Practical = "Practical",
 }
 
-function getSessionType(element: HTMLElement): SessionType {
+const getSessionType = (element: HTMLElement): SessionType => {
   return SessionType[
     element.className
       .split(" ")
@@ -79,7 +79,7 @@ function getSessionType(element: HTMLElement): SessionType {
         Object.keys(SessionType).includes(className),
       )[0] as keyof typeof SessionType
   ];
-}
+};
 
 export interface RecurringSession {
   course: string;
@@ -109,10 +109,10 @@ export type SessionsGroup = {
   [course: string]: { [sessionType in SessionType]: number | null };
 };
 
-export function completeSessionsGroup(
+export const completeSessionsGroup = (
   selectedGroups: SessionsGroup,
   sessionsGroups: SessionsGroups,
-) {
+) => {
   const sessionsGroup: SessionsGroup = {};
   for (const course in sessionsGroups) {
     sessionsGroup[course] =
@@ -125,13 +125,13 @@ export function completeSessionsGroup(
           };
   }
   return sessionsGroup;
-}
+};
 
-export function getSessions(
+export const getSessions = (
   htmlContent: string,
   mondayWeekOne: Date,
   selectedCoursesNames: string[],
-): Session[] {
+): Session[] => {
   const html = new DOMParser().parseFromString(htmlContent, "text/html");
   const allSessions = html.querySelectorAll("div.eventCourse");
   const sessions: Session[] = [];
@@ -177,9 +177,9 @@ export function getSessions(
     }
   }
   return sessions;
-}
+};
 
-export function getSessionsGroups(sessions: Session[]): SessionsGroups {
+export const getSessionsGroups = (sessions: Session[]): SessionsGroups => {
   const sessionsGroups: SessionsGroups = {};
   for (const session of sessions) {
     if (session.group) {
@@ -199,12 +199,12 @@ export function getSessionsGroups(sessions: Session[]): SessionsGroups {
     }
   }
   return Object.fromEntries(Object.entries(sessionsGroups).sort());
-}
+};
 
-export function getSelectedSessions(
+export const getSelectedSessions = (
   sessions: Session[],
   selectedGroups: SessionsGroup,
-) {
+) => {
   return sessions.filter((session) => {
     const group =
       session.course in selectedGroups
@@ -212,12 +212,12 @@ export function getSelectedSessions(
         : null;
     return session.group == group;
   });
-}
+};
 
 // overlap in number of hours
-export function computeOverlap(
+export const computeOverlap = (
   sessions: Session[],
-): [[Session, Session][], number] {
+): [[Session, Session][], number] => {
   const sortedSessions = sessions.sort(
     (a, b) => a.startDate.getTime() - b.startDate.getTime(),
   );
@@ -240,9 +240,9 @@ export function computeOverlap(
   }
 
   return [overlaps, totalOverlapHours];
-}
+};
 
-export function generateICS(sessions: Session[]): string {
+export const generateICS = (sessions: Session[]): string => {
   const icsSessions = [];
 
   for (const session of sessions) {
@@ -292,9 +292,9 @@ END:VCALENDAR`;
     .concat(iCalFooter);
 
   return iCalContent;
-}
+};
 
-export function download(filename: string, text: string) {
+export const download = (filename: string, text: string) => {
   const element = document.createElement("a");
   element.setAttribute(
     "href",
@@ -308,4 +308,4 @@ export function download(filename: string, text: string) {
   element.click();
 
   document.body.removeChild(element);
-}
+};
