@@ -28,15 +28,6 @@ This website is just a frontend (no backend). It is written in typescript using 
 
 ## Running for local development
 
-First, add the relevant timetable `.html` pages in `public/teaching/timetables/`
-
-```bash
-$ mkdir -p public/teaching/timetables
-$ curl https://www.cs.ox.ac.uk/teaching/timetables/timetable-MT2024.html > public/teaching/timetables/timetable-MT2024.html
-```
-
-Then, run the webserver
-
 ```bash
 $ npm install
 $ npm run dev
