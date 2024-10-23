@@ -69,6 +69,8 @@ export const CoursesSelection = ({
       ).then((response) =>
         response.text().then((text) => setHtmlContent(text)),
       );
+    } else {
+      setHtmlContent("");
     }
   }, [selectedTerm, date]);
   useEffect(() => {
