@@ -2,15 +2,21 @@ import { useEffect, useState } from "react";
 import { Session } from "./generate_ics";
 import { useDisclosure } from "@mantine/hooks";
 import { Collapse, Group, List, Text, UnstyledButton } from "@mantine/core";
+import dayjs from "dayjs";
+
+/**
+ * Convenience type for specifying which two sessions are involved in one overlap.
+ */
+type Overlap = [Session, Session];
 
 // overlap in number of hours
 const computeOverlap = (
   sessions: Session[],
-): [[Session, Session][], number] => {
+): [Overlap[], number] => {
   const sortedSessions = sessions.sort(
     (a, b) => a.startDate.getTime() - b.startDate.getTime(),
   );
-  const overlaps: [Session, Session][] = [];
+  const overlaps: Overlap[] = [];
   let totalOverlapHours = 0;
 
   for (let i = 0; i < sortedSessions.length - 1; i++) {
@@ -20,10 +26,9 @@ const computeOverlap = (
       j < sortedSessions.length &&
       session.endDate > sortedSessions[j].startDate
     ) {
-      overlaps.push([session, sortedSessions[j]]);
-      totalOverlapHours +=
-        (session.endDate.getTime() - sortedSessions[j].startDate.getTime()) /
-        3600000;
+      const overlap: Overlap = [session, sortedSessions[j]];
+      overlaps.push(overlap);
+      totalOverlapHours += getOverlapDuration(overlap);
       j++;
     }
   }
@@ -67,12 +72,9 @@ export const Overlaps = ({
         <Collapse in={opened}>
           <List>
             {overlaps.map((s) => {
-              const startDate = new Date(
-                Math.max(s[0].startDate.getTime(), s[1].startDate.getTime()),
-              );
-              const endDate = new Date(
-                Math.min(s[0].endDate.getTime(), s[1].endDate.getTime()),
-              );
+              const startDate = getOverlapStart(s);
+              const endDate = getOverlapEnd(s);
+
               const dateString =
                 startDate.toLocaleDateString("en-GB", {
                   weekday: "short",
@@ -118,3 +120,31 @@ export const Overlaps = ({
     );
   }
 };
+
+/**
+ * Returns the start datetime of a given overlap.
+ */
+function getOverlapStart(overlap: Overlap): Date {
+  return new Date(
+    Math.max(overlap[0].startDate.getTime(), overlap[1].startDate.getTime()),
+  );
+}
+
+/**
+ * Returns the end datetime of a given overlap.
+ */
+function getOverlapEnd(overlap: Overlap): Date {
+  return new Date(
+    Math.min(overlap[0].endDate.getTime(), overlap[1].endDate.getTime()),
+  );
+}
+
+/**
+ * Returns the length of the given overlap in hours.
+ */
+function getOverlapDuration(overlap: Overlap): number {
+  const start = getOverlapStart(overlap);
+  const end = getOverlapEnd(overlap);
+
+  return dayjs(end).diff(start, "hours");
+}
