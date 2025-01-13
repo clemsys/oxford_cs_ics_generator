@@ -49,9 +49,9 @@ export const CoursesSelection = ({
   setSessions: (sessions: Session[]) => void;
 }) => {
   const [htmlContent, setHtmlContent] = useState<string>("");
-  const [date, setDate] = useState<Date | null>(new Date(2024, 9, 14));
+  const [date, setDate] = useState<Date | null>(new Date(2025, 0, 20));
   const [selectedTerm, setSelectedTerm] = useState<string | null>(
-    Object.keys(terms)[0],
+    Object.keys(terms)[1],
   );
   const [courses, setCourses] = useState<string[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
