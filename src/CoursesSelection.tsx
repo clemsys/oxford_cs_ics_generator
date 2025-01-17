@@ -29,9 +29,11 @@ const getCourses = (html: string): string[] => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
   const courseDivs = doc.querySelectorAll("div.eventCourse");
-  const courses = Array.from(courseDivs).map(
-    (div) => div.children[0].innerHTML,
-  );
+  const courses = Array.from(courseDivs)
+    .map((div) => div.firstChild)
+    .filter((node) => node !== null)
+    .map((node) => node.textContent)
+    .filter((text) => text !== null);
   return courses
     .filter((course, index) => courses.indexOf(course) === index)
     .sort();
